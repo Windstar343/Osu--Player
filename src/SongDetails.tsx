@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { X, FolderOpen, FileSearch } from "lucide-react";
+import { X, FolderOpen, FileSearch, ExternalLink } from "lucide-react";
 import { Track, modes } from "./model";
 import { Cover } from "./PlayerViews";
 type FileInfo = { exists: boolean; bytes: number; format: string };
@@ -9,13 +9,11 @@ export function SongDetails({
   track,
   close,
   relink,
-  sources,
   refresh,
 }: {
   track: Track | null;
   close: () => void;
   relink: (id: string, path: string) => void;
-  sources: () => void;
   refresh: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -111,14 +109,6 @@ export function SongDetails({
             <dd>{track.modes.map((m) => modes[m]).join(", ")}</dd>
             <dt>Audio file</dt>
             <dd className="file-path">{track.audioPath}</dd>
-            <dt>Availability</dt>
-            <dd>
-              {!info
-                ? "Checking file…"
-                : info.exists
-                  ? "Available on this PC"
-                  : "Unavailable — the file or library may have moved."}
-            </dd>
             {info?.exists && (
               <>
                 <dt>Format / size</dt>
@@ -129,10 +119,10 @@ export function SongDetails({
               </>
             )}
           </dl>
-          {(!info?.exists || track.missing) && (
+          {info && !info.exists && (
             <p className="mode-explanation">
-              Check Music sources if you moved osu! or switched libraries. You
-              can also locate this song’s audio file. Favorites and playlists
+              Unavailable — the file or library may have moved. Locate this
+              song’s audio file or refresh your library. Favorites and playlists
               keep their references.
             </p>
           )}
@@ -153,15 +143,19 @@ export function SongDetails({
               <FileSearch size={15} />
               Locate audio file
             </button>
-            <button
-              className="text-button"
-              onClick={() => {
-                close();
-                sources();
-              }}
-            >
-              Music sources
-            </button>
+            {track.beatmapSetId && track.beatmapSetId > 0 ? (
+              <button
+                className="text-button"
+                onClick={() =>
+                  void invoke("open_beatmap", { id: track.beatmapSetId }).catch(
+                    (e) => setError(String(e)),
+                  )
+                }
+              >
+                <ExternalLink size={15} />
+                Beatmap page
+              </button>
+            ) : null}
             <button
               className="text-button"
               onClick={() => {

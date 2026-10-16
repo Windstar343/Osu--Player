@@ -1187,7 +1187,6 @@ function App() {
         relink={(id, path) =>
           lib.relink(id, path, tracksById.get(id) || fallbackTrack(id))
         }
-        sources={lib.openSources}
         refresh={() => void lib.loadSources(lib.activeSources)}
       />
       <SourcesDialog lib={lib} />
