@@ -62,7 +62,7 @@ export function ArtworkGrid({
               aria-label={"Play " + t.title}
               onClick={() => actions.current.play(t)}
             >
-              <Cover track={t} />
+              <Cover track={t} thumbnail />
               <strong>{t.title}</strong>
               <small>
                 {t.artist}
@@ -73,7 +73,7 @@ export function ArtworkGrid({
               <button
                 className="icon"
                 aria-label={"Song details for " + t.title}
-                onClick={() => details(t)}
+                onClick={() => actions.current.details(t)}
               >
                 <Info size={15} />
               </button>

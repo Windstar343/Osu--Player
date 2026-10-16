@@ -34,7 +34,9 @@ export function DiscordSettings({
       </p>
       <p className="mode-explanation">
         Requires the Discord desktop app and activity sharing enabled in
-        Discord. Pausing or turning this off clears the activity.
+        Discord. Pausing or turning this off clears the activity. Covers use
+        public osu! artwork; local-only or unavailable covers show the player
+        logo. Local artwork is never uploaded.
       </p>
     </section>
   );

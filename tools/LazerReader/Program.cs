@@ -23,6 +23,8 @@ try
     foreach (dynamic set in sets)
     {
         if ((bool)set.DeletePending) continue;
+        long? onlineSetId = null;
+        try { long candidate = (long)set.OnlineID; if (candidate > 0) onlineSetId = candidate; } catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException) { }
         var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (dynamic usage in set.Files)
         {
@@ -70,9 +72,10 @@ try
                         }
                     }
                 }
+                beatmapSetId ??= onlineSetId;
                 var parent = pair.Key.Contains('/') ? pair.Key[..(pair.Key.LastIndexOf('/') + 1)] : "";
                 if (!files.TryGetValue(parent + audio, out var audioPath)) { skipped++; continue; }
-                if (seen.TryGetValue(audioPath, out var existing)) { if (!existing.modes.Contains(mode)) existing.modes.Add(mode); continue; }
+                if (seen.TryGetValue(audioPath, out var existing)) { if (!existing.modes.Contains(mode)) existing.modes.Add(mode); existing.beatmapSetId ??= beatmapSetId; continue; }
                 string? artwork = null;
                 if (background != null) files.TryGetValue(parent + background.Replace('\\','/'), out artwork);
                 var track = new LazerTrack { id = audioPath, title = title.Length > 0 ? title : audio, artist = artist.Length > 0 ? artist : "Unknown artist", creator = creator, audioPath = audioPath, backgroundPath = artwork, modes = new List<int> { mode }, beatmapSetId = beatmapSetId };

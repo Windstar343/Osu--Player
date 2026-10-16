@@ -51,7 +51,14 @@ export function VirtualRows<T>({
   useEffect(() => {
     if (viewport.current) viewport.current.scrollTop = 0;
     setFirst(0);
-  }, [items, height]);
+  }, [height]);
+  useEffect(() => {
+    const element = viewport.current;
+    if (!element) return;
+    const limit = Math.max(0, items.length * height - element.clientHeight);
+    if (element.scrollTop > limit) element.scrollTop = limit;
+    setFirst(Math.floor(element.scrollTop / height));
+  }, [items.length, height]);
   const start = Math.max(0, first - overscan),
     end = Math.min(
       items.length,

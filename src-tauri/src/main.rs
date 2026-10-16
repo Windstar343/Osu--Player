@@ -1,4 +1,5 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+mod artwork;
 mod desktop;
 mod discord;
 #[cfg(windows)]
@@ -314,6 +315,7 @@ fn main() {
         })
         .on_window_event(desktop::window_event)
         .invoke_handler(tauri::generate_handler![
+            artwork::artwork_thumbnail,
             files::audio_file_info,
             files::authorize_audio_file,
             files::show_audio_file,

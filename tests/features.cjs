@@ -239,6 +239,7 @@ const server = http.createServer((req, res) => {
             };
           if (cmd === "authorize_audio_file") return args.path;
           if (cmd === "show_audio_file") return null;
+          if (cmd === "artwork_thumbnail") return "art";
           if (cmd === "write_playlist_backup") {
             window.backup = args.content;
             return null;
@@ -911,6 +912,29 @@ const server = http.createServer((req, res) => {
       "Scrolling within a row must not rebuild cards",
     );
     await page.evaluate(() => window.scrollObserver.disconnect());
+    await page
+      .locator(".artwork-grid .virtual-viewport")
+      .evaluate((e) => (e.scrollTop = 1300));
+    await page.waitForTimeout(80);
+    await page.locator(".artwork-grid .virtual-viewport").evaluate((e) => {
+      const bounds = e.getBoundingClientRect();
+      const button = Array.from(
+        e.querySelectorAll('button[aria-label^="Favorite "]'),
+      ).find((b) => {
+        const r = b.getBoundingClientRect();
+        return r.top > bounds.top && r.bottom < bounds.bottom;
+      });
+      if (!button) throw new Error("No visible favorite button");
+      button.click();
+    });
+    await page.waitForTimeout(80);
+    assert.equal(
+      await page
+        .locator(".artwork-grid .virtual-viewport")
+        .evaluate((e) => e.scrollTop),
+      1300,
+      "Favoriting a grid card must preserve scroll position",
+    );
     await page.getByRole("button", { name: "List view", exact: true }).click();
 
     await page

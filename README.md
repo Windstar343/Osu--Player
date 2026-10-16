@@ -152,3 +152,5 @@ GitHub-built releases provide an installer, a portable executable, and SHA-256 c
 ## Credits
 
 osu! Player was created by **Windstar343**. Builds include the creator credit and complete MIT license under **Settings â†’ About osu! Player**. Preserve the copyright and permission notice when redistributing the software, as required by the MIT license.
+
+Artwork cards use locally cached 256-pixel thumbnails to reduce image decoding while scrolling. Favoriting songs preserves the list position. Discord uses square public osu! covers and falls back to the player logo for unavailable online artwork; local artwork is never uploaded. Lazer imports also read the set’s online ID when individual difficulty files omit it.

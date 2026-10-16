@@ -9,7 +9,7 @@ const { buildSync } = require(
 const root = path.resolve(__dirname, "..");
 const bundle = buildSync({
   stdin: {
-    contents: `import React from 'react'; import {createRoot} from 'react-dom/client'; import {VirtualRows} from './src/VirtualRows'; window.rowRenders=0; const items=Array.from({length:1000},(_,i)=>i); const render=(item)=>{window.rowRenders++;return <span>Song {item}</span>}; createRoot(document.getElementById('root')).render(<VirtualRows items={items} height={285} overscan={2} render={render}/>);`,
+    contents: `import React, {useState} from 'react'; import {createRoot} from 'react-dom/client'; import {VirtualRows} from './src/VirtualRows'; window.rowRenders=0; const items=Array.from({length:1000},(_,i)=>i); const render=(item)=>{window.rowRenders++;return <span>Song {item}</span>}; function App(){const [favorite,setFavorite]=useState(false);return <><button onClick={()=>setFavorite(!favorite)}>Favorite</button><VirtualRows items={items.slice()} height={285} overscan={2} render={render}/></>} createRoot(document.getElementById('root')).render(<App/>);`,
     loader: "tsx",
     resolveDir: root,
   },
@@ -49,6 +49,13 @@ const bundle = buildSync({
     assert.ok(
       added <= 1,
       `Only a newly exposed row should render; got ${added}`,
+    );
+    await page.getByRole("button", { name: "Favorite", exact: true }).click();
+    await page.waitForTimeout(60);
+    assert.equal(
+      await page.locator(".virtual-viewport").evaluate((e) => e.scrollTop),
+      350,
+      "Favoriting with a new items array must preserve scroll",
     );
     console.log(
       `PASS: no row renders during within-row scrolling; ${added} newly rendered row at the next boundary.`,

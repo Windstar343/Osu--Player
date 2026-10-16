@@ -18,6 +18,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import { useThumbnail } from "./useThumbnail";
 import { useState } from "react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { Track, Settings, time, modes } from "./model";
@@ -28,20 +29,23 @@ const artwork = (track: Track | null) =>
 export function Cover({
   track,
   large = false,
+  thumbnail = false,
 }: {
   track: Track | null;
   large?: boolean;
+  thumbnail?: boolean;
 }) {
+  const cover = useThumbnail(track?.backgroundPath, thumbnail);
   const [failed, setFailed] = useState<string | undefined>(undefined);
   return (
     <div className={"cover " + (large ? "big" : "")}>
-      {artwork(track) && failed !== artwork(track) ? (
+      {cover && failed !== cover ? (
         <img
-          src={artwork(track)}
+          src={cover}
           alt=""
           loading="lazy"
           decoding="async"
-          onError={() => setFailed(artwork(track))}
+          onError={() => setFailed(cover)}
         />
       ) : (
         <Music2 size={large ? 26 : 20} />

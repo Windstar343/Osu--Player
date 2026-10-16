@@ -227,7 +227,7 @@ pub async fn scan_sources(
     let revision = super::desktop::library_revision(sources.clone()).await?;
     tauri::async_runtime::spawn_blocking(move || {
         let signature = serde_json::to_vec(&sources).map_err(|e| e.to_string())?;
-        let cache_file = cache.join(format!("library-v1-{:x}.json", Sha256::digest(&signature)));
+        let cache_file = cache.join(format!("library-v2-{:x}.json", Sha256::digest(&signature)));
         // Revalidate cached paths before restoring asset access.
         if let Some(saved) = cached_library(&cache_file, &revision) {
             for root in &saved.roots { app.asset_protocol_scope().allow_directory(root, true).map_err(|e| e.to_string())?; }

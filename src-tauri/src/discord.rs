@@ -33,6 +33,9 @@ pub struct Presence {
     #[serde(default)]
     pub beatmap_set_id: Option<i64>,
 }
+fn square_cover_url(id: i64) -> String {
+    format!("https://assets.ppy.sh/beatmaps/{id}/covers/list@2x.jpg")
+}
 fn default_rate() -> f64 {
     1.0
 }
@@ -66,6 +69,12 @@ impl DiscordPresence {
         let mut previous = String::new();
         let mut last_sent: Option<Instant> = None;
         let mut sent_times: Option<(i64, Option<i64>)> = None;
+        let covers = reqwest::blocking::Client::builder()
+            .timeout(Duration::from_secs(3))
+            .build()
+            .ok();
+        let mut cover_cache: std::collections::HashMap<i64, (Instant, Option<String>)> =
+            std::collections::HashMap::new();
         loop {
             let (mut request, received_at) = self
                 .request
@@ -115,10 +124,17 @@ impl DiscordPresence {
                         mode_label(&request.mode)
                     ));
                     let (start, end) = timestamps(request.position, request.duration, request.rate);
-                    let cover = request
-                        .beatmap_set_id
-                        .filter(|id| *id > 0)
-                        .map(|id| format!("https://assets.ppy.sh/beatmaps/{id}/covers/cover.jpg"));
+                    let cover = request.beatmap_set_id.filter(|id| *id > 0).and_then(|id| {
+                        let fresh = cover_cache.get(&id).filter(|(checked, url)| checked.elapsed() < Duration::from_secs(if url.is_some() { 3600 } else { 30 }));
+                        if let Some((_, url)) = fresh { return url.clone(); }
+                        let url = square_cover_url(id);
+                        let found = covers.as_ref().and_then(|client| client.head(&url).send().ok())
+                            .filter(|response| response.status().is_success())
+                            .map(|_| url);
+                        if cover_cache.len() >= 512 { cover_cache.clear(); }
+                        cover_cache.insert(id, (Instant::now(), found.clone()));
+                        found
+                    }).or_else(|| Some("https://raw.githubusercontent.com/Windstar343/Osu--Player/main/public/logo.png".to_string()));
                     let key = format!("{title}|{state}|{cover:?}");
                     if last_sent
                         .map(|sent| sent.elapsed() >= Duration::from_secs(15))
@@ -272,6 +288,10 @@ mod tests {
     use super::*;
     #[test]
     fn presence_limits_text_and_handles_invalid_timing() {
+        assert_eq!(
+            square_cover_url(123),
+            "https://assets.ppy.sh/beatmaps/123/covers/list@2x.jpg"
+        );
         assert_eq!(discord_text(""), "Unknown");
         assert_eq!(discord_text(&"x".repeat(500)).len(), 100);
         assert!(discord_text(&"🎵".repeat(100)).len() <= 100);
