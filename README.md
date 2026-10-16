@@ -134,3 +134,14 @@ The adjacent **timer** button pauses after 15, 30, 45, 60, or 90 minutes, or at 
 ## Downloadable Windows builds
 
 Maintainers can run **Actions → Build Windows app → Run workflow**. The completed run provides an `osu-player-windows` artifact with the executable and license. These builds run on GitHub's machines and remap source paths; do not upload local debug executables as releases.
+
+
+## Version 0.2: file recovery and desktop behavior
+
+Browser context menus and browser shortcuts (including F12, inspect, print, save, and reload) are disabled in the app. Release builds do not enable developer tools. Right-click a song or use its information button to open **Song details** instead. Source code remains editable for contributors.
+
+Song details includes title, artist, mapper, library, game modes, audio file location, format, file size, and availability. **Show in folder** reveals available audio in Explorer. **Locate audio file** reconnects a moved song while keeping its existing favorite/playlist ID. Use Music sources and Refresh library to reconnect an entire moved library.
+
+Previously scanned songs that are no longer available appear in **Unavailable songs**. Their metadata and relinked audio locations stay in local storage on the user's PC, and are never part of a release. An unavailable song in a playlist opens recovery details rather than attempting playback. Catalogs are local to the installation; the app cannot recover metadata for files it has never seen.
+
+GitHub-built releases provide an installer, a portable executable, and SHA-256 checksums. No local debug executable, cache, music library, or developer configuration is bundled. Discord remains opt-in and requires a maintainer-supplied application ID at build time.

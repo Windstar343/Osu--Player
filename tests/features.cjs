@@ -227,7 +227,18 @@ const server = http.createServer((req, res) => {
             };
           }
           if (cmd === "plugin:dialog|save") return "backup.json";
-          if (cmd === "plugin:dialog|open") return "backup.json";
+          if (cmd === "plugin:dialog|open")
+            return args?.options?.title?.startsWith("Locate audio")
+              ? "relinked.mp3"
+              : "backup.json";
+          if (cmd === "audio_file_info")
+            return {
+              exists: window.fileExists !== false,
+              bytes: 1048576,
+              format: "mp3",
+            };
+          if (cmd === "authorize_audio_file") return args.path;
+          if (cmd === "show_audio_file") return null;
           if (cmd === "write_playlist_backup") {
             window.backup = args.content;
             return null;
@@ -519,6 +530,39 @@ const server = http.createServer((req, res) => {
       () => !document.querySelector(".expanded-player"),
     );
     assert.equal(await page.locator("footer").count(), 1);
+    await page.evaluate(() => (window.fileExists = false));
+    await page
+      .locator("aside")
+      .getByRole("button", { name: /Unavailable/ })
+      .click();
+    await page
+      .getByRole("button", { name: "Song details for Pulse", exact: true })
+      .click();
+    const details = page.getByRole("dialog", {
+      name: "Song details",
+      exact: true,
+    });
+    await page.waitForFunction(() =>
+      document
+        .querySelector(".song-details")
+        .textContent.includes("Unavailable —"),
+    );
+    await page.screenshot({
+      path: path.join(root, "test-results", "missing-song.png"),
+    });
+    await page.evaluate(() => (window.fileExists = true));
+    await details
+      .getByRole("button", { name: "Locate audio file", exact: true })
+      .click();
+    await page.waitForFunction(
+      () =>
+        JSON.parse(localStorage.getItem("audioOverridesV1")).a ===
+        "relinked.mp3",
+    );
+    await details
+      .getByRole("button", { name: "Close song details", exact: true })
+      .click();
+
     await page.clock.resume();
 
     await page.reload();
@@ -738,7 +782,7 @@ const server = http.createServer((req, res) => {
       await page.evaluate(() => navigator.mediaSession.metadata),
       null,
     );
-    // Visual preferences, quick search, and both sleep-timer modes.
+    // Visual preferences, quick search, both sleep-timer modes; custom context menus, blocked browser shortcuts, song details, missing-song recovery, and persisted relinking.
     await page.getByLabel("Accent color", { exact: true }).selectOption("pink");
     await page.waitForFunction(
       () =>
@@ -856,9 +900,53 @@ const server = http.createServer((req, res) => {
     await page.screenshot({
       path: path.join(root, "test-results", "large-library.png"),
     });
+    await page.locator(".track").first().click({ button: "right" });
+    await page
+      .getByRole("dialog", { name: "Song details", exact: true })
+      .waitFor();
+    await page
+      .getByRole("button", { name: "Show in folder", exact: true })
+      .click();
+    assert.equal(
+      await page.evaluate(() =>
+        window.calls.some((c) => c.cmd === "show_audio_file"),
+      ),
+      true,
+    );
+    await page
+      .getByRole("button", { name: "Close song details", exact: true })
+      .click();
+    assert.equal(
+      await page.evaluate(
+        () =>
+          !document
+            .querySelector(".shell")
+            .dispatchEvent(
+              new MouseEvent("contextmenu", {
+                bubbles: true,
+                cancelable: true,
+              }),
+            ),
+      ),
+      true,
+    );
+    assert.equal(
+      await page.evaluate(
+        () =>
+          !window.dispatchEvent(
+            new KeyboardEvent("keydown", {
+              key: "F12",
+              code: "F12",
+              bubbles: true,
+              cancelable: true,
+            }),
+          ),
+      ),
+      true,
+    );
     assert.deepEqual(errors, []);
     console.log(
-      "PASS: source/mode/mapper filters; playlist create/add/reorder/rename/remove/persist/delete; actual audio playback, Now Playing and playlist order; DT/NC measured frequency and pitch, no generated percussion, opt-in Discord clearing, playback rate, EQ graph and reset; tray preferences; automatic refresh; editable queue, session restore, mini-player, crossfade and preloaded transitions, backup dialogs, media controls, 10,003-song virtualization; artwork grid, adaptive/fixed accents, sidebar collapse, keyboard quick search, badge visibility, fading mini controls, and both sleep-timer modes.",
+      "PASS: source/mode/mapper filters; playlist create/add/reorder/rename/remove/persist/delete; actual audio playback, Now Playing and playlist order; DT/NC measured frequency and pitch, no generated percussion, opt-in Discord clearing, playback rate, EQ graph and reset; tray preferences; automatic refresh; editable queue, session restore, mini-player, crossfade and preloaded transitions, backup dialogs, media controls, 10,003-song virtualization; artwork grid, adaptive/fixed accents, sidebar collapse, keyboard quick search, badge visibility, fading mini controls, both sleep-timer modes; custom context menus, blocked browser shortcuts, song details, missing-song recovery, and persisted relinking.",
     );
   } finally {
     await browser.close();

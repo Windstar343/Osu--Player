@@ -1,6 +1,7 @@
 import type { PlaybackMode } from "./playback";
 export type Track = {
   id: string;
+  missing?: boolean;
   title: string;
   artist: string;
   creator: string;

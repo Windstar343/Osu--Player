@@ -26,6 +26,8 @@ import {
   LayoutGrid,
   List,
   PanelLeft,
+  Info,
+  FileWarning,
 } from "lucide-react";
 import {
   Track,
@@ -44,6 +46,7 @@ import { Cover, PlayerBar, NowPlaying } from "./PlayerViews";
 import { Logo } from "./Logo";
 import { useDiscord } from "./useDiscord";
 import "./style.css";
+import { SongDetails } from "./SongDetails";
 import { ArtworkGrid } from "./ArtworkGrid";
 import { useArtworkTheme } from "./useArtworkTheme";
 import { QuickSearch } from "./QuickSearch";
@@ -85,6 +88,7 @@ function App() {
     stored("playlistsV1", []),
   );
   const [view, setView] = useState("library");
+  const [detailsId, setDetailsId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
@@ -109,6 +113,7 @@ function App() {
     lib.setMessage,
     sleep.afterSong,
     sleep.finish,
+    lib.markUnavailable,
   );
   sleepPlayer.current = player;
   useArtworkTheme(player.current, settings.theme);
@@ -120,6 +125,21 @@ function App() {
       );
   }, [expanded, mini]);
   useMediaKeys(player, settings.mediaKeys);
+  useEffect(() => {
+    const block = (e: KeyboardEvent) => {
+      if (
+        e.key === "F12" ||
+        e.key === "F5" ||
+        ((e.ctrlKey || e.metaKey) &&
+          (["KeyR", "KeyP", "KeyS", "KeyU"].includes(e.code) ||
+            (e.shiftKey && ["KeyI", "KeyJ", "KeyC"].includes(e.code))))
+      ) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("keydown", block, true);
+    return () => window.removeEventListener("keydown", block, true);
+  }, []);
   useEffect(() => {
     if (expanded && !player.current) {
       setExpanded(false);
@@ -228,7 +248,8 @@ function App() {
   ]);
   useEffect(() => {
     function key(event: KeyboardEvent) {
-      if ((event.target as HTMLElement).closest("dialog[open]")) return;
+      if (event.defaultPrevented || !(event.target instanceof Element)) return;
+      if (event.target.closest("dialog[open]")) return;
       if (event.key === "Escape" && expanded) {
         setExpanded(false);
         if (fullscreen) {
@@ -264,21 +285,45 @@ function App() {
       ),
     [lib.tracks],
   );
+  const allTracks = useMemo(
+    () => [...lib.tracks, ...lib.unavailable],
+    [lib.tracks, lib.unavailable],
+  );
+  const fallbackTrack = (id: string): Track => ({
+    id,
+    title: "Unavailable song",
+    artist: "",
+    creator: "",
+    audioPath: id,
+    sources: [],
+    modes: [],
+    missing: true,
+  });
   const tracksById = useMemo(
-    () => new Map(lib.tracks.map((t) => [t.id, t])),
-    [lib.tracks],
+    () => new Map(allTracks.map((t) => [t.id, t])),
+    [allTracks],
   );
   const favoriteIds = useMemo(() => new Set(favorites), [favorites]);
   const collection = useMemo(
     () =>
-      selectedPlaylist
-        ? selectedPlaylist.trackIds
-            .map((id) => tracksById.get(id))
-            .filter((t): t is Track => !!t)
-        : lib.tracks.filter(
-            (t) => view !== "favorites" || favoriteIds.has(t.id),
-          ),
-    [lib.tracks, selectedPlaylist, view, favoriteIds, tracksById],
+      view === "unavailable"
+        ? lib.unavailable
+        : selectedPlaylist
+          ? selectedPlaylist.trackIds
+              .map((id) => tracksById.get(id) || fallbackTrack(id))
+              .filter((t): t is Track => !!t)
+          : (view === "favorites" ? allTracks : lib.tracks).filter(
+              (t) => view !== "favorites" || favoriteIds.has(t.id),
+            ),
+    [
+      lib.tracks,
+      lib.unavailable,
+      allTracks,
+      selectedPlaylist,
+      view,
+      favoriteIds,
+      tracksById,
+    ],
   );
   const visible = useMemo(
     () =>
@@ -294,11 +339,17 @@ function App() {
     [collection, sourceFilter, modeFilter, mapperFilter, query],
   );
   const missing = selectedPlaylist
-    ? selectedPlaylist.trackIds.length - collection.length
+    ? selectedPlaylist.trackIds.filter(
+        (id) => !tracksById.has(id) || tracksById.get(id)?.missing,
+      ).length
     : 0;
   const title =
     selectedPlaylist?.name ||
-    (view === "favorites" ? "Favorites" : "Your collection");
+    (view === "unavailable"
+      ? "Unavailable songs"
+      : view === "favorites"
+        ? "Favorites"
+        : "Your collection");
   function favorite(id: string) {
     setFavorites((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
@@ -378,6 +429,10 @@ function App() {
     );
   }
   function playTrack(track: Track) {
+    if (track.missing) {
+      setDetailsId(track.id);
+      return;
+    }
     void player.play(
       track,
       visible.map((t) => t.id),
@@ -453,6 +508,7 @@ function App() {
   }
   return (
     <div
+      onContextMenu={(e) => e.preventDefault()}
       className={
         "shell " +
         (layout === "grid" ? "artwork-layout " : "") +
@@ -489,6 +545,16 @@ function App() {
             {lib.tracks.filter((t) => favorites.includes(t.id)).length}
           </span>
         </button>
+        {lib.unavailable.length > 0 && (
+          <button
+            className={"nav " + (view === "unavailable" ? "selected" : "")}
+            title="Unavailable songs"
+            onClick={() => setView("unavailable")}
+          >
+            <FileWarning size={18} />
+            Unavailable<span>{lib.unavailable.length}</span>
+          </button>
+        )}
         <div className="playlist-heading">
           <span className="nav-label">PLAYLISTS</span>
           <button
@@ -642,15 +708,21 @@ function App() {
                 </div>
                 <h1>
                   {selectedPlaylist?.name ||
-                    (view === "favorites" ? "Favorites" : "Library")}
+                    (view === "unavailable"
+                      ? "Unavailable songs"
+                      : view === "favorites"
+                        ? "Favorites"
+                        : "Library")}
                 </h1>
                 <p>
                   {selectedPlaylist
                     ? selectedPlaylist.trackIds.length + " songs"
-                    : view === "favorites"
-                      ? "Your saved songs."
-                      : lib.tracks.length +
-                        " songs from your selected osu! libraries."}
+                    : view === "unavailable"
+                      ? "Locate moved audio files or update Music sources."
+                      : view === "favorites"
+                        ? "Your saved songs."
+                        : lib.tracks.length +
+                          " songs from your selected osu! libraries."}
                 </p>
                 <div className="hero-buttons">
                   <button
@@ -795,6 +867,7 @@ function App() {
                     favorites={favoriteIds}
                     playlist={(id) => showPlaylistDialog("add", undefined, id)}
                     enqueue={player.enqueue}
+                    details={(track) => setDetailsId(track.id)}
                   />
                 ) : (
                   <div className="track-list">
@@ -810,8 +883,13 @@ function App() {
                       render={(track, index) => (
                         <div
                           key={track.id}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            setDetailsId(track.id);
+                          }}
                           className={
                             "track " +
+                            (track.missing ? "unavailable-track " : "") +
                             (player.current?.id === track.id ? "active" : "")
                           }
                         >
@@ -834,7 +912,15 @@ function App() {
                             <Cover track={track} />
                             <div>
                               <strong>{track.title}</strong>
-                              <small>{track.artist}</small>
+                              <small>
+                                {track.artist}
+                                {track.missing && (
+                                  <em className="unavailable-label">
+                                    {" "}
+                                    · Unavailable
+                                  </em>
+                                )}
+                              </small>
                               <span className="source-badges">
                                 {track.sources.map((source) => (
                                   <em key={source}>
@@ -864,6 +950,14 @@ function App() {
                             )}
                           </div>
                           <div className="track-actions">
+                            <button
+                              className="icon"
+                              aria-label={"Song details for " + track.title}
+                              title="Song details"
+                              onClick={() => setDetailsId(track.id)}
+                            >
+                              <Info size={16} />
+                            </button>
                             <details className="song-queue-menu">
                               <summary
                                 aria-label={"Queue options for " + track.title}
@@ -987,9 +1081,11 @@ function App() {
                       ? "No songs match these filters"
                       : selectedPlaylist
                         ? "This playlist is empty."
-                        : view === "favorites"
-                          ? "No favorites yet"
-                          : "No songs loaded."}
+                        : view === "unavailable"
+                          ? "Locate moved audio files or update Music sources."
+                          : view === "favorites"
+                            ? "No favorites yet"
+                            : "No songs loaded."}
                   </h3>
                   <p>
                     {selectedPlaylist
@@ -1081,6 +1177,19 @@ function App() {
         />
         <SleepTimerControl timer={sleep} />
       </div>
+      <SongDetails
+        track={
+          detailsId
+            ? tracksById.get(detailsId) || fallbackTrack(detailsId)
+            : null
+        }
+        close={() => setDetailsId(null)}
+        relink={(id, path) =>
+          lib.relink(id, path, tracksById.get(id) || fallbackTrack(id))
+        }
+        sources={lib.openSources}
+        refresh={() => void lib.loadSources(lib.activeSources)}
+      />
       <SourcesDialog lib={lib} />
       <dialog
         ref={playlistDialog}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Heart, ListMusic, Plus } from "lucide-react";
+import { Heart, ListMusic, Plus, Info } from "lucide-react";
 import { Track } from "./model";
 import { Cover } from "./PlayerViews";
 import { VirtualRows } from "./VirtualRows";
@@ -11,7 +11,9 @@ export function ArtworkGrid({
   favorites,
   playlist,
   enqueue,
+  details,
 }: {
+  details: (track: Track) => void;
   tracks: Track[];
   current?: string;
   play: (t: Track) => void;
@@ -49,7 +51,14 @@ export function ArtworkGrid({
             style={{ gridTemplateColumns: `repeat(${columns},minmax(0,1fr))` }}
           >
             {row.map((t) => (
-              <article key={t.id} className={current === t.id ? "active" : ""}>
+              <article
+                key={t.id}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  details(t);
+                }}
+                className={current === t.id ? "active" : ""}
+              >
                 <button
                   className="grid-play"
                   aria-label={"Play " + t.title}
@@ -57,9 +66,19 @@ export function ArtworkGrid({
                 >
                   <Cover track={t} />
                   <strong>{t.title}</strong>
-                  <small>{t.artist}</small>
+                  <small>
+                    {t.artist}
+                    {t.missing ? " · Unavailable" : ""}
+                  </small>
                 </button>
                 <div className="grid-actions">
+                  <button
+                    className="icon"
+                    aria-label={"Song details for " + t.title}
+                    onClick={() => details(t)}
+                  >
+                    <Info size={15} />
+                  </button>
                   <button
                     className={"icon " + (favorites.has(t.id) ? "pink" : "")}
                     aria-label={"Favorite " + t.title}

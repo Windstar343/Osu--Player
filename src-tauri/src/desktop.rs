@@ -67,6 +67,19 @@ pub fn open_beatmap(app: tauri::AppHandle, id: i64) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 pub fn setup(app: &mut tauri::App) -> tauri::Result<()> {
+    #[cfg(windows)]
+    if let Some(window) = app.get_webview_window("main") {
+        window.with_webview(|webview| unsafe {
+            if let Ok(settings) = webview
+                .controller()
+                .CoreWebView2()
+                .and_then(|core| core.Settings())
+            {
+                let _ = settings.SetAreDefaultContextMenusEnabled(false);
+                let _ = settings.SetAreDevToolsEnabled(false);
+            }
+        })?;
+    }
     let show = MenuItem::with_id(app, "show", "Open osu! Player", true, None::<&str>)?;
     let toggle = MenuItem::with_id(app, "toggle", "Play / Pause", true, None::<&str>)?;
     let next = MenuItem::with_id(app, "next", "Next song", true, None::<&str>)?;

@@ -3,6 +3,7 @@ mod desktop;
 mod discord;
 #[cfg(windows)]
 mod discord_pipe;
+mod files;
 mod sources;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -313,6 +314,9 @@ fn main() {
         })
         .on_window_event(desktop::window_event)
         .invoke_handler(tauri::generate_handler![
+            files::audio_file_info,
+            files::authorize_audio_file,
+            files::show_audio_file,
             scan_library,
             detect_libraries,
             sources::discover_sources,

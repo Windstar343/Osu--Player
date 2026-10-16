@@ -8,6 +8,7 @@ export function useAudio(
   onError: (message: string) => void,
   stopAfterSong = false,
   onSleepEnd?: () => void,
+  onUnavailable?: (track: Track) => void,
 ) {
   const primary = useRef<HTMLAudioElement>(null);
   const spare = useRef<HTMLAudioElement>(null);
@@ -342,7 +343,10 @@ export function useAudio(
         (e) => {
           if (e.target === audio.current) {
             setPlaying(false);
-            onError("Unable to play this audio file.");
+            onError(
+              "Unable to play this audio file. Open Song details to check its location.",
+            );
+            if (currentRef.current) onUnavailable?.(currentRef.current);
           }
         },
       ],

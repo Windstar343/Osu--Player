@@ -2,8 +2,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Track, Source, stored, persist } from "./model";
+import { reconcileLibrary } from "./libraryCatalog";
 export function useLibrary() {
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [unavailable, setUnavailable] = useState<Track[]>([]);
+  const catalog = useRef<Track[]>(stored("knownTracksV1", []));
+  const overrides = useRef<Record<string, string>>(
+    stored("audioOverridesV1", {}),
+  );
   const [sources, setSources] = useState<Source[]>(
     () =>
       stored<Source[] | null>("librarySourcesV1", null) || [
@@ -42,12 +48,30 @@ export function useLibrary() {
           skipped: number;
           warnings: string[];
         }>("scan_sources", { sources: selection });
-        setTracks(
-          result.tracks.map((t) => ({
-            ...t,
-            modes: t.modes?.length ? t.modes : [0],
-          })),
-        );
+        const fresh = result.tracks.map((t) => ({
+          ...t,
+          modes: t.modes?.length ? t.modes : [0],
+        }));
+        const byId = new Map(fresh.map((t) => [t.id, t]));
+        for (const [id, path] of Object.entries(overrides.current)) {
+          const original =
+            byId.get(id) || catalog.current.find((t) => t.id === id);
+          if (!original) continue;
+          try {
+            const resolved = await invoke<string>("authorize_audio_file", {
+              path,
+            });
+            byId.set(id, { ...original, audioPath: resolved, missing: false });
+          } catch {
+            /* Keep missing overrides recoverable. */
+          }
+        }
+        const available = [...byId.values()];
+        const reconciled = reconcileLibrary(available, catalog.current);
+        catalog.current = reconciled.catalog;
+        persist("knownTracksV1", catalog.current);
+        setTracks(available);
+        setUnavailable(reconciled.unavailable);
         revision.current = before;
         setLastRefresh(Date.now());
         const notes = [...result.warnings];
@@ -156,6 +180,36 @@ export function useLibrary() {
   }
   return {
     tracks,
+    unavailable,
+    markUnavailable: async (track: Track) => {
+      try {
+        const info = await invoke<{ exists: boolean }>("audio_file_info", {
+          path: track.audioPath,
+        });
+        if (info.exists) return;
+      } catch {
+        /* The selected file is no longer accessible. */
+      }
+      setTracks((prev) => prev.filter((t) => t.id !== track.id));
+      setUnavailable((prev) => [
+        ...prev.filter((t) => t.id !== track.id),
+        { ...track, missing: true },
+      ]);
+    },
+    relink: (id: string, path: string, fallback?: Track) => {
+      const original = catalog.current.find((t) => t.id === id) || fallback;
+      if (!original) return;
+      const replacement = { ...original, audioPath: path, missing: false };
+      overrides.current = { ...overrides.current, [id]: path };
+      persist("audioOverridesV1", overrides.current);
+      catalog.current = [
+        ...catalog.current.filter((t) => t.id !== id),
+        replacement,
+      ];
+      persist("knownTracksV1", catalog.current);
+      setTracks((prev) => [...prev.filter((t) => t.id !== id), replacement]);
+      setUnavailable((prev) => prev.filter((t) => t.id !== id));
+    },
     sources,
     setSources,
     activeSources,

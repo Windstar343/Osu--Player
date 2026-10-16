@@ -18,6 +18,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import { useState } from "react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { Track, Settings, time, modes } from "./model";
 import { Player } from "./useAudio";
@@ -31,10 +32,16 @@ export function Cover({
   track: Track | null;
   large?: boolean;
 }) {
+  const [failed, setFailed] = useState<string | undefined>(undefined);
   return (
     <div className={"cover " + (large ? "big" : "")}>
-      {artwork(track) ? (
-        <img src={artwork(track)} alt="" loading="lazy" />
+      {artwork(track) && failed !== artwork(track) ? (
+        <img
+          src={artwork(track)}
+          alt=""
+          loading="lazy"
+          onError={() => setFailed(artwork(track))}
+        />
       ) : (
         <Music2 size={large ? 26 : 20} />
       )}
