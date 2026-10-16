@@ -919,14 +919,12 @@ const server = http.createServer((req, res) => {
     assert.equal(
       await page.evaluate(
         () =>
-          !document
-            .querySelector(".shell")
-            .dispatchEvent(
-              new MouseEvent("contextmenu", {
-                bubbles: true,
-                cancelable: true,
-              }),
-            ),
+          !document.querySelector(".shell").dispatchEvent(
+            new MouseEvent("contextmenu", {
+              bubbles: true,
+              cancelable: true,
+            }),
+          ),
       ),
       true,
     );

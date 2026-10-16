@@ -2,6 +2,8 @@
 
 A Windows desktop music player for downloaded **osu! stable and osu!lazer** beatmaps.
 
+[Download the latest Windows release](https://github.com/Windstar343/Osu--Player/releases/latest). Choose **Setup.exe** to install, or **Portable.exe** to run without installing. Microsoft Edge WebView2 is required.
+
 ## Use
 Double-click **Osu! Player.exe**. It opens its own desktop window without a browser or web server.
 
