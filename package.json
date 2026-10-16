@@ -11,7 +11,7 @@
     "build:lazer": "dotnet publish tools/LazerReader -c Release -o src-tauri/resources/lazer-reader",
     "desktop:dev": "npm run build:lazer && npm run dev",
     "desktop:build": "npm run build:lazer && npm run build",
-    "test:ui": "npm run build && node tests/backup.cjs && node tests/features.cjs",
+    "test:ui": "npm run build && node tests/backup.cjs && node tests/scroll.cjs && node tests/features.cjs",
     "format": "prettier --write src tests vite.config.ts",
     "format:check": "prettier --check src tests vite.config.ts"
   },

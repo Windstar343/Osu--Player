@@ -40,6 +40,7 @@ export function Cover({
           src={artwork(track)}
           alt=""
           loading="lazy"
+          decoding="async"
           onError={() => setFailed(artwork(track))}
         />
       ) : (

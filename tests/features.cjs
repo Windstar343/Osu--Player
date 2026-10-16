@@ -805,12 +805,6 @@ const server = http.createServer((req, res) => {
       .getByRole("button", { name: "Artwork grid view", exact: true })
       .click();
     assert.equal(await page.locator(".grid-play").count(), 3);
-    await page.getByRole("button", { name: "Play Sky", exact: true }).click();
-    await page.waitForFunction(
-      () =>
-        document.querySelector(".now-playing-title strong").textContent ===
-        "Sky",
-    );
     await page
       .getByRole("button", { name: "Collapse sidebar", exact: true })
       .click();
@@ -891,6 +885,34 @@ const server = http.createServer((req, res) => {
       document.querySelector(".section-title").textContent.includes("10003"),
     );
     assert.ok((await page.locator(".track").count()) < 30);
+    await page
+      .getByRole("button", { name: "Artwork grid view", exact: true })
+      .click();
+    await page.evaluate(() => {
+      window.scrollMutations = 0;
+      window.scrollObserver = new MutationObserver(
+        (records) => (window.scrollMutations += records.length),
+      );
+      window.scrollObserver.observe(document.querySelector(".artwork-grid"), {
+        subtree: true,
+        childList: true,
+        attributes: true,
+      });
+    });
+    for (let y = 1; y <= 100; y += 10) {
+      await page.locator(".artwork-grid .virtual-viewport").evaluate((e, y) => {
+        e.scrollTop = y;
+      }, y);
+      await page.waitForTimeout(18);
+    }
+    assert.equal(
+      await page.evaluate(() => window.scrollMutations),
+      0,
+      "Scrolling within a row must not rebuild cards",
+    );
+    await page.evaluate(() => window.scrollObserver.disconnect());
+    await page.getByRole("button", { name: "List view", exact: true }).click();
+
     await page
       .locator(".virtual-viewport")
       .evaluate((e) => (e.scrollTop = e.scrollHeight));

@@ -1,16 +1,47 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { memo, ReactNode, useEffect, useRef, useState } from "react";
+const Row = memo(function Row<T>({
+  item,
+  index,
+  height,
+  render,
+}: {
+  item: T;
+  index: number;
+  height: number;
+  render: (item: T, index: number) => ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: index * height,
+        height,
+        width: "100%",
+      }}
+    >
+      {render(item, index)}
+    </div>
+  );
+}) as <T>(props: {
+  item: T;
+  index: number;
+  height: number;
+  render: (item: T, index: number) => ReactNode;
+}) => ReactNode;
 export function VirtualRows<T>({
   items,
   height,
   render,
+  overscan = 5,
 }: {
   items: T[];
   height: number;
   render: (item: T, index: number) => ReactNode;
+  overscan?: number;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
-  const [top, setTop] = useState(0);
-  const [size, setSize] = useState(600);
+  const [first, setFirst] = useState(0),
+    [size, setSize] = useState(600);
   useEffect(() => {
     const element = viewport.current!;
     const observer = new ResizeObserver(() => setSize(element.clientHeight));
@@ -19,29 +50,28 @@ export function VirtualRows<T>({
   }, []);
   useEffect(() => {
     if (viewport.current) viewport.current.scrollTop = 0;
-    setTop(0);
+    setFirst(0);
   }, [items, height]);
-  const start = Math.max(0, Math.floor(top / height) - 5);
-  const end = Math.min(items.length, Math.ceil((top + size) / height) + 5);
+  const start = Math.max(0, first - overscan),
+    end = Math.min(
+      items.length,
+      first + Math.ceil(size / height) + 1 + overscan,
+    );
   return (
     <div
       className="virtual-viewport"
       ref={viewport}
-      onScroll={(e) => setTop(e.currentTarget.scrollTop)}
+      onScroll={(e) => setFirst(Math.floor(e.currentTarget.scrollTop / height))}
     >
       <div style={{ height: items.length * height, position: "relative" }}>
         {items.slice(start, end).map((item, offset) => (
-          <div
+          <Row
             key={start + offset}
-            style={{
-              position: "absolute",
-              top: (start + offset) * height,
-              height,
-              width: "100%",
-            }}
-          >
-            {render(item, start + offset)}
-          </div>
+            item={item}
+            index={start + offset}
+            height={height}
+            render={render}
+          />
         ))}
       </div>
     </div>
