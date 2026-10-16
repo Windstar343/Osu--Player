@@ -1,0 +1,36 @@
+node_modules/
+dist/
+src-tauri/target/
+*.local
+/Osu! Player.exe
+tools/LazerReader/bin/
+tools/LazerReader/obj/
+src-tauri/resources/lazer-reader/
+tools/LazerReader/FodyWeavers.xsd
+test-results/
+
+# Personal configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.log
+*.dmp
+.vs/
+.vscode/
+.idea/
+.codex/
+.agents/
+# Generated state, caches, and binaries
+src-tauri/gen/
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.map
+coverage/
+playwright-report/
+*playlists*.json

@@ -1,0 +1,34 @@
+name: Build Windows app
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install Rust
+        run: rustup update stable --no-self-update
+      - name: Install dependencies
+        run: npm install
+      - name: Build Windows application
+        shell: pwsh
+        run: |
+          $env:RUSTFLAGS = "--remap-path-prefix=$env:GITHUB_WORKSPACE=/source --remap-path-prefix=$env:USERPROFILE=/builder"
+          ./Build-Desktop.ps1 -Release
+      - uses: actions/upload-artifact@v7
+        with:
+          name: osu-player-windows
+          path: |
+            Osu! Player.exe
+            LICENSE
+          if-no-files-found: error
