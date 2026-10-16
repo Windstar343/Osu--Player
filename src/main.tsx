@@ -522,7 +522,7 @@ function App() {
         <div className="brand">
           <Logo />
           <span>
-            player<span className="beta">LOCAL MUSIC</span>
+            Osu! Player<span className="beta">LOCAL MUSIC</span>
           </span>
         </div>
         <div className="nav-label">YOUR SPACE</div>
