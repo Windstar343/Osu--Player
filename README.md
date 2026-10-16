@@ -147,3 +147,8 @@ Song details includes title, artist, mapper, library, game modes, audio file loc
 Previously scanned songs that are no longer available appear in **Unavailable songs**. Their metadata and relinked audio locations stay in local storage on the user's PC, and are never part of a release. An unavailable song in a playlist opens recovery details rather than attempting playback. Catalogs are local to the installation; the app cannot recover metadata for files it has never seen.
 
 GitHub-built releases provide an installer, a portable executable, and SHA-256 checksums. No local debug executable, cache, music library, or developer configuration is bundled. Discord remains opt-in and requires a maintainer-supplied application ID at build time.
+
+
+## Credits
+
+osu! Player was created by **Windstar343**. Builds include the creator credit and complete MIT license under **Settings → About osu! Player**. Preserve the copyright and permission notice when redistributing the software, as required by the MIT license.

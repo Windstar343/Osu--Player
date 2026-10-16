@@ -942,6 +942,34 @@ const server = http.createServer((req, res) => {
       ),
       true,
     );
+    for (const viewport of [
+      { width: 1280, height: 820 },
+      { width: 2328, height: 1360 },
+    ]) {
+      await page.setViewportSize(viewport);
+      for (const mode of ["Artwork grid view", "List view"]) {
+        await page.getByRole("button", { name: mode, exact: true }).click();
+        const gap = await page
+          .locator(".library .virtual-viewport")
+          .evaluate(
+            (e) =>
+              document.querySelector("footer").getBoundingClientRect().top -
+              e.getBoundingClientRect().bottom,
+          );
+        assert.ok(
+          gap >= 0 && gap <= 16,
+          `Collection should fill available height, got ${gap}px gap`,
+        );
+      }
+    }
+    await page
+      .locator("aside")
+      .getByRole("button", { name: "Settings", exact: true })
+      .click();
+    assert.equal(
+      await page.getByText("Created by Windstar343", { exact: true }).count(),
+      1,
+    );
     assert.deepEqual(errors, []);
     console.log(
       "PASS: source/mode/mapper filters; playlist create/add/reorder/rename/remove/persist/delete; actual audio playback, Now Playing and playlist order; DT/NC measured frequency and pitch, no generated percussion, opt-in Discord clearing, playback rate, EQ graph and reset; tray preferences; automatic refresh; editable queue, session restore, mini-player, crossfade and preloaded transitions, backup dialogs, media controls, 10,003-song virtualization; artwork grid, adaptive/fixed accents, sidebar collapse, keyboard quick search, badge visibility, fading mini controls, both sleep-timer modes; custom context menus, blocked browser shortcuts, song details, missing-song recovery, and persisted relinking.",

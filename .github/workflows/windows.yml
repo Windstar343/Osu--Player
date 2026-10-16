@@ -42,7 +42,7 @@ jobs:
           New-Item -ItemType Directory -Path release-files -Force | Out-Null
           Copy-Item src-tauri/target/release/osu-player.exe release-files/Osu-Player-portable.exe
           Get-ChildItem src-tauri/target/release/bundle/nsis/*.exe | Copy-Item -Destination release-files
-          Copy-Item LICENSE release-files
+          Copy-Item LICENSE,NOTICE release-files
           Get-ChildItem release-files/*.exe | ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" } | Set-Content release-files/SHA256SUMS.txt
       - uses: actions/upload-artifact@v7
         with:

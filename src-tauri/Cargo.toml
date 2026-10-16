@@ -2,6 +2,8 @@
 name = "osu-player"
 version = "0.2.0"
 edition = "2021"
+authors = ["Windstar343"]
+license = "MIT"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

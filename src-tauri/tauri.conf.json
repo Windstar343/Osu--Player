@@ -36,6 +36,9 @@
     "icon": [
       "icons/icon.ico",
       "icons/icon.png"
-    ]
+    ],
+    "license": "MIT",
+    "licenseFile": "../LICENSE",
+    "copyright": "Copyright (c) 2026 Windstar343 and osu! Player contributors"
   }
 }

@@ -1,6 +1,7 @@
 import { FolderPlus, RefreshCw, RotateCcw } from "lucide-react";
 import { Settings } from "./model";
 import { PlaybackModes } from "./PlaybackModes";
+import license from "../LICENSE?raw";
 import { DiscordSettings } from "./DiscordSettings";
 type Props = {
   exportBackup: () => void;
@@ -310,6 +311,15 @@ export function SettingsView({
             Import playlists
           </button>
         </div>
+      </section>
+      <section className="settings-card" aria-label="About osu! Player">
+        <h2>About osu! Player</h2>
+        <p className="about-credit">Created by Windstar343</p>
+        <p>Original project: github.com/Windstar343/Osu--Player</p>
+        <details>
+          <summary>License & attribution</summary>
+          <pre className="about-license">{license}</pre>
+        </details>
       </section>
       <p className="settings-footnote">
         Changes save automatically on this PC. Your osu! files stay untouched.
